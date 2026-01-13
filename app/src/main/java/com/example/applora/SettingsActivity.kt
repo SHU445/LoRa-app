@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothSearching
@@ -32,17 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.applora.ui.theme.AppLoRaTheme
 
-/**
- * Activity de gestion des paramètres Bluetooth.
- */
 class SettingsActivity : ComponentActivity() {
 
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
@@ -51,6 +45,7 @@ class SettingsActivity : ComponentActivity() {
     }
 
     private val discoveredDevices = mutableStateListOf<BluetoothDevice>()
+    private val connectedDevice = mutableStateOf<BluetoothDevice?>(null)
     private val isDiscovering = mutableStateOf(false)
 
     private val bluetoothReceiver = object : BroadcastReceiver() {
@@ -77,12 +72,10 @@ class SettingsActivity : ComponentActivity() {
 
                 BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
                     isDiscovering.value = true
-                    Toast.makeText(context, "Recherche Bluetooth en cours…", Toast.LENGTH_SHORT).show()
                 }
 
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
                     isDiscovering.value = false
-                    Toast.makeText(context, "Recherche terminée", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -93,11 +86,7 @@ class SettingsActivity : ComponentActivity() {
             if (result.all { it.value }) {
                 startBluetoothDiscovery()
             } else {
-                Toast.makeText(
-                    this,
-                    "Permissions Bluetooth requises",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(this, "Permissions Bluetooth requises", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -111,16 +100,17 @@ class SettingsActivity : ComponentActivity() {
         }
         registerReceiver(bluetoothReceiver, filter)
 
-        checkBluetoothState()
-
         setContent {
             AppLoRaTheme {
                 SettingsScreen(
                     pairedDevices = getPairedDevices(),
                     discoveredDevices = discoveredDevices,
+                    connectedDevice = connectedDevice.value,
                     isDiscovering = isDiscovering.value,
                     onStartDiscovery = { checkPermissionsAndStartDiscovery() },
-                    onStopDiscovery = { stopBluetoothDiscovery() }
+                    onStopDiscovery = { stopBluetoothDiscovery() },
+                    onDeviceSelected = { connectToDevice(it) },
+                    onDisconnect = { disconnectDevice() }
                 )
             }
         }
@@ -129,31 +119,31 @@ class SettingsActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopBluetoothDiscovery()
-        try {
-            unregisterReceiver(bluetoothReceiver)
-        } catch (_: IllegalArgumentException) {
-        }
-    }
-
-    private fun checkBluetoothState() {
-        when {
-            bluetoothAdapter == null ->
-                Toast.makeText(this, "Bluetooth non supporté", Toast.LENGTH_LONG).show()
-
-            bluetoothAdapter?.isEnabled == true ->
-                Toast.makeText(this, "Bluetooth activé", Toast.LENGTH_SHORT).show()
-
-            else ->
-                Toast.makeText(this, "Veuillez activer le Bluetooth", Toast.LENGTH_LONG).show()
-        }
+        unregisterReceiver(bluetoothReceiver)
     }
 
     private fun getPairedDevices(): List<BluetoothDevice> {
         return if (hasConnectPermission()) {
             bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
-        } else {
-            emptyList()
-        }
+        } else emptyList()
+    }
+
+    private fun connectToDevice(device: BluetoothDevice) {
+        if (!hasConnectPermission()) return
+
+        bluetoothAdapter?.cancelDiscovery()
+        connectedDevice.value = device
+
+        Toast.makeText(
+            this,
+            "Connecté à ${device.name ?: device.address}",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun disconnectDevice() {
+        connectedDevice.value = null
+        Toast.makeText(this, "Déconnecté", Toast.LENGTH_SHORT).show()
     }
 
     private fun checkPermissionsAndStartDiscovery() {
@@ -181,61 +171,38 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
-    private fun hasScanPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_SCAN
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        }
-    }
-
     private fun hasConnectPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.BLUETOOTH_CONNECT
             ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
+        } else true
     }
 
     private fun startBluetoothDiscovery() {
-        if (bluetoothAdapter == null || bluetoothAdapter?.isEnabled != true) {
-            Toast.makeText(this, "Bluetooth indisponible", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (!hasScanPermission()) return
-
         discoveredDevices.clear()
         bluetoothAdapter?.cancelDiscovery()
         bluetoothAdapter?.startDiscovery()
     }
 
     private fun stopBluetoothDiscovery() {
-        if (hasScanPermission()) {
-            bluetoothAdapter?.cancelDiscovery()
-            isDiscovering.value = false
-        }
+        bluetoothAdapter?.cancelDiscovery()
+        isDiscovering.value = false
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     pairedDevices: List<BluetoothDevice>,
     discoveredDevices: List<BluetoothDevice>,
+    connectedDevice: BluetoothDevice?,
     isDiscovering: Boolean,
     onStartDiscovery: () -> Unit,
-    onStopDiscovery: () -> Unit
+    onStopDiscovery: () -> Unit,
+    onDeviceSelected: (BluetoothDevice) -> Unit,
+    onDisconnect: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -264,36 +231,44 @@ fun SettingsScreen(
         ) {
 
             if (isDiscovering) {
+                item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+            }
+
+            item { SectionTitle("Appareil connecté") }
+
+            if (connectedDevice == null) {
+                item { EmptyCard("Aucun appareil Bluetooth connecté") }
+            } else {
                 item {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    DeviceCard(connectedDevice) {}
+                }
+                item {
+                    TextButton(
+                        onClick = onDisconnect,
+                        modifier = Modifier.padding(start = 16.dp)
+                    ) {
+                        Text("Se déconnecter")
+                    }
                 }
             }
 
-            item {
-                SectionTitle("Status")
-            }
-
-            item {
-                SectionTitle("Appareils appairés")
-            }
+            item { SectionTitle("Appareils appairés") }
 
             if (pairedDevices.isEmpty()) {
                 item { EmptyCard("Aucun appareil appairé") }
             } else {
                 items(pairedDevices) {
-                    DeviceCard(it) {}
+                    DeviceCard(it) { onDeviceSelected(it) }
                 }
             }
 
-            item {
-                SectionTitle("Appareils découverts")
-            }
+            item { SectionTitle("Appareils détectés") }
 
             if (discoveredDevices.isEmpty() && !isDiscovering) {
                 item { EmptyCard("Aucun appareil détecté") }
             } else {
                 items(discoveredDevices) {
-                    DeviceCard(it) {}
+                    DeviceCard(it) { onDeviceSelected(it) }
                 }
             }
         }
@@ -316,7 +291,7 @@ fun EmptyCard(text: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Text(
             text = text,
@@ -327,12 +302,12 @@ fun EmptyCard(text: String) {
 }
 
 @Composable
-fun DeviceCard(device: BluetoothDevice, onClick: (BluetoothDevice) -> Unit) {
+fun DeviceCard(device: BluetoothDevice, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable { onClick(device) },
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
