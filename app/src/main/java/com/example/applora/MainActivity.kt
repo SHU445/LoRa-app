@@ -287,7 +287,7 @@ fun EmptyConversationPlaceholder() {
             )
             
             Text(
-                text = "Envoyez votre premier message via LoRa",
+                text = "Envoyez un message via LoRa",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
