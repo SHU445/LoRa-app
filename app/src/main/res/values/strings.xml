@@ -1,19 +1,55 @@
 <resources>
-    <string name="app_name">app LoRa</string>
-    <string name="title_activity_settings">SettingsActivity</string>
+    <string name="app_name">Bluetooth LoRa COM</string>
+    <string name="title_activity_settings">Connexion Bluetooth</string>
 
-    <!-- Preference Titles -->
+    <!-- États de connexion -->
+    <string name="connected">Connecté</string>
+    <string name="disconnected">Non connecté</string>
+    <string name="connecting">Connexion en cours...</string>
+    <string name="listening">En attente de connexion</string>
+    <string name="bt_service_ready">Prêt pour Bluetooth</string>
+
+    <!-- Bluetooth -->
+    <string name="bluetooth_settings">Paramètres Bluetooth</string>
+    <string name="paired_devices">Appareils appairés</string>
+    <string name="discovered_devices">Appareils à proximité</string>
+    <string name="no_paired_devices">Aucun appareil appairé</string>
+    <string name="no_devices_found">Aucun appareil détecté</string>
+    <string name="unknown_device">Appareil inconnu</string>
+    <string name="start_discovery">Rechercher des appareils</string>
+    <string name="stop_discovery">Arrêter la recherche</string>
+    <string name="be_visible">Être visible</string>
+    <string name="stop_listening">Arrêter l\'écoute</string>
+    <string name="disconnect">Déconnecter</string>
+
+    <!-- Messages -->
+    <string name="no_messages">Aucun message</string>
+    <string name="send_message_hint">Écrire un message...</string>
+    <string name="send">Envoyer</string>
+    <string name="not_connected_message">Connectez-vous à un appareil pour envoyer des messages</string>
+
+    <!-- Notifications -->
+    <string name="incoming_connection">Connexion entrante</string>
+    <string name="connection_established">Connexion établie</string>
+    <string name="connection_lost">Connexion perdue</string>
+    <string name="connection_failed">Échec de la connexion</string>
+    <string name="notification_channel_connection">Connexion Bluetooth</string>
+    <string name="notification_channel_messages">Messages reçus</string>
+    <string name="notification_connected_title">Connecté en Bluetooth</string>
+    <string name="notification_connected_device_unknown">Un appareil</string>
+    <string name="notification_message_from_unknown">Nouveau message</string>
+
+    <!-- Permissions -->
+    <string name="bluetooth_permission_required">Permissions Bluetooth requises</string>
+    <string name="location_permission_required">Permission de localisation requise pour la recherche Bluetooth</string>
+
+    <!-- Preference Titles (legacy) -->
     <string name="messages_header">Messages</string>
     <string name="sync_header">Sync</string>
-
-    <!-- Messages Preferences -->
     <string name="signature_title">Your signature</string>
     <string name="reply_title">Default reply action</string>
-
-    <!-- Sync Preferences -->
     <string name="sync_title">Sync email periodically</string>
     <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails</string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
 </resources>

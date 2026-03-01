@@ -2,13 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.kapt)
 }
+
 
 android {
     namespace = "com.example.applora"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.applora"
@@ -21,14 +21,19 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+        getByName("release") {
+            applicationVariants.all {
+                val variant = this
+                val versionCode = variant.versionCode
+                val versionName = variant.versionName
+                variant.outputs.all {
+                    val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+                    output.outputFileName = "LoRa-app-v${versionName}-${versionCode}.apk"
+                }
+            }
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -47,6 +52,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -101,4 +107,11 @@ dependencies {
     // Optional - Integration with RxJava
     implementation("androidx.compose.runtime:runtime-rxjava2")
 
+    // Room pour persistance des messages
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }
